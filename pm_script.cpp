@@ -13,7 +13,7 @@ using namespace std::chrono;
 
 #define FOFILE              "StreamTokenMapFO.config"
 #define OTUPUTFILENAME      "PriceMonitor.config"
-#define FILEPATH            "c:/Users/Administrator/Desktop/sc/"                                              //Keep blank for Current Directory
+#define FILEPATH            "C:/Users/somna/Documents/Programming"                                              //Keep blank for Current Directory
 
 
 #define FIRSTCOLUMN         1
@@ -108,18 +108,16 @@ void printinfo(){
         cout<<freqset.count(*it)<<"\t";
     }cout<<endl<<endl;
 
-    
-
-
 }
 
-
-int main(int argc, char const *argv[]){
+void fileParser(){
     //timer
     auto start = high_resolution_clock::now();
 
 
     string inputFileName = filepath;
+    if(inputFileName[inputFileName.length()-1]!='/')
+        inputFileName.append("/");
     inputFileName.append(ipfilename);
 
     ifstream fip;
@@ -133,7 +131,6 @@ int main(int argc, char const *argv[]){
     
     
     //Parsing FILE
-    
     string line="DEAFULT";
     int symcount=0;
     //while(fp >> temp )
@@ -173,9 +170,14 @@ int main(int argc, char const *argv[]){
     cout<<stream_set.size()<<" Unique Streams"<<endl;
     cout<<symcount<<" Unique Symbols"<<endl;
     printinfo();
-    
+
+}
+
+
+int main(int argc, char const *argv[]){
     
     //DRIVER CODE 
+    fileParser();
     
     int ch=0;
     int stream;
