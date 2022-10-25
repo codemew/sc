@@ -111,9 +111,6 @@ void printinfo(){
 }
 
 void fileParser(){
-    //timer
-    auto start = high_resolution_clock::now();
-
 
     string inputFileName = filepath;
     if(inputFileName[inputFileName.length()-1]!='/')
@@ -158,14 +155,6 @@ void fileParser(){
     }
     fip.close();
 
-    //PARSING TIME
-    auto stop = high_resolution_clock::now();
-    //auto duration = duration_cast<microseconds>(stop - start);
-
-     duration<double> time_span = duration_cast<duration<double>>(stop - start);
-
-     cout << "Parsing Time taken : " << time_span.count() << " Seconds\n" << endl;
-
     //Parsing info
     cout<<stream_set.size()<<" Unique Streams"<<endl;
     cout<<symcount<<" Unique Symbols"<<endl;
@@ -175,6 +164,8 @@ void fileParser(){
 
 
 int main(int argc, char const *argv[]){
+    //timer
+    auto start = high_resolution_clock::now();
     
     //DRIVER CODE 
     fileParser();
@@ -200,6 +191,12 @@ int main(int argc, char const *argv[]){
         stream=ch;
     }
     cout<<pricemon<<" Entries added to PriceMonitor.config"<<endl;
+
+    //Total TIME
+    auto stop = high_resolution_clock::now();
+    //auto duration = duration_cast<microseconds>(stop - start);
+     duration<double> time_span = duration_cast<duration<double>>(stop - start);
+     cout << "Parsing Time taken : " << time_span.count() << " Seconds\n" << endl;
     	
 
 return 0;
