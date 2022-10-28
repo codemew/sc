@@ -11,9 +11,8 @@ using namespace std::chrono;
 
 #define FOFILE "StreamTokenMapFO.config"
 #define OTUPUTFILENAME "PriceMonitor.config"
-#define FILEPATH "" // Keep blank for Current Directory
+#define FILEPATH "C:/Users/Administrator/Desktop/sc" // Keep blank for Current Directory
 
-#define FIRSTCOLUMN 1
 #define THIRDCOLUMN 0
 #define FOURTHCOLUMN 100
 
@@ -21,7 +20,6 @@ using namespace std::chrono;
 #define SECONDLINE "0,PriceMonitor_Fut.log,"
 
 // Default columns
-int firstColumn = FIRSTCOLUMN;
 int thirdColumn = THIRDCOLUMN;
 int fourthColumn = FOURTHCOLUMN;
 
@@ -33,30 +31,22 @@ string filepath = FILEPATH; // USE THIS FOR CUSTOM PATH OTHER THAN PWD
 // DataStructures
 map<int, int> token2Stream;
 map<int, string> token2Symbol;
-multiset<int> freqset;
 set<int> stream_set;
-int symcount = 0;
 
-int token, stream;
-string symbol;
-
-int stream_arr[20];
-int column_arr[3];
-int pricemon = 0;
+int stream_no[20];
+int column_no[2];
+int priceMonitorEntries = 0;
 
 void printusage()
 {
-    cout << "-i: InputFileName\n";
-    cout << "-o: OutputFileName\n";
-    cout << "-s: Stream(s) Comma Seperated\n";
-    cout << "-p: Path of Input and Output file\n";
-    cout << "-c: Create\n";
-    cout << "-v: View info\n";
-    cout << "-w: Custom PriceMonitor Params\n";
+    cout << "i: InputFileName\n";
+    cout << "s: Stream(s) Comma Seperated\n";
+    cout << "p: Path of Input and Output file\n";
+    cout << "w: Custom PriceMonitor Params\n";
 }
 
 // return total number of streams parsed
-int parsestreaminfo(string str, int *p)
+int parsecomma(string str, int *p)
 {
     int count = 0;
     char *ch = (char *)str.c_str();
@@ -72,7 +62,7 @@ int parsestreaminfo(string str, int *p)
     return count;
 }
 
-void writefile(int stream)
+int writefile(int stream)
 {
 
     ofstream fp;
@@ -90,16 +80,16 @@ void writefile(int stream)
     {
         if (it->second == stream)
         {
-            fp << firstColumn << ',' << token2Symbol[it->first] << ',' << thirdColumn << ',' << fourthColumn << ',' << endl;
+            fp << 1 << ',' << token2Symbol[it->first] << ',' << thirdColumn << ',' << fourthColumn << ',' << endl;
             count++;
         }
     }
 
-    pricemon += count;
-
     std::cout << "Stream " << stream << " : " << count << " Entries" << endl;
 
     fp.close();
+
+    return count;
 }
 
 void createFile(string filename)
@@ -129,34 +119,13 @@ void createFile(string filename)
               << endl;
 }
 
-void printinfo()
+void fileParser(string ipfile)
 {
 
-    std::cout << "\nNo. of Symbols found in each Stream: " << endl;
-
-    std::cout << "\n";
-    for (auto it = stream_set.begin(); it != stream_set.end(); it++)
-    {
-        std::cout << "Strm" << *it << "\t";
-    }
-    std::cout << endl;
-
-    for (auto it = stream_set.begin(); it != stream_set.end(); it++)
-    {
-        std::cout << freqset.count(*it) << "\t";
-    }
-    std::cout << endl
-              << endl;
-
-    // Parsing info
-    std::cout << stream_set.size() << " Unique Streams" << endl;
-    std::cout << symcount << " Unique Symbols\n"
-              << endl;
-}
-
-void fileParser()
-{
+    int token, stream;
+    string symbol;
     string inputFileName;
+
     if (filepath != "")
     {
         inputFileName = filepath;
@@ -180,7 +149,6 @@ void fileParser()
 
     // Parsing FILE
     string line = "DEAFULT";
-    symcount = 0;
     // while(fp >> temp )
     while (!fip.eof())
     {
@@ -189,8 +157,6 @@ void fileParser()
 
         if (line == "")
             break;
-
-        symcount++;
 
         char *ch = (char *)line.c_str();
         stream = atoi(strtok(ch, ","));
@@ -203,20 +169,25 @@ void fileParser()
         token2Stream[token] = stream;
         token2Symbol[token] = symbol;
         stream_set.insert(stream);
-        freqset.insert(stream);
     }
     fip.close();
 }
 
-void addStream(int stream)
+int addStream(int *stream, int count)
 {
-    auto pos = stream_set.find(stream);
-    if (pos != stream_set.end())
+    int entries = 0;
+    while (count-- > 0)
     {
-        writefile(stream);
+        auto pos = stream_set.find(*stream);
+        if (pos != stream_set.end())
+        {
+            entries += writefile(*stream++);
+        }
+        else
+            std::cout << "Invalid Stream or Stream not found!" << endl;
     }
-    else
-        std::cout << "Invalid Stream or Stream not found!" << endl;
+
+    return entries;
 }
 
 void printTime(std::chrono::_V2::system_clock::time_point *stime)
@@ -234,74 +205,58 @@ int main(int argc, char *argv[])
     // timer
     std::chrono::_V2::system_clock::time_point start = high_resolution_clock::now();
 
-    // new changes //options parser
-    bool view, create;
-    view = create = false;
+    int totalentries = 0;
 
-    int opt, stream_count = 0;
-    while ((opt = getopt(argc, argv, "i:o:s:vcp:w:h")) != -1)
+    // new changes //options parser
+
+    int opt,
+        stream_count = 0;
+    if (argc == 1)
+        printusage();
+    else
     {
-        switch (opt)
+        while ((opt = getopt(argc, argv, "i:s:p:w:h")) != -1)
         {
-        case 'i':
-            printf("Input File name: %s\n", optarg);
-            ipfilename = optarg;
-            break;
-        case 'o':
-            printf("Output File name: %s\n", optarg);
-            opfilename = optarg;
-            break;
-        case 's':
-            printf("Stream number %s will be added\n", optarg);
-            stream_count = parsestreaminfo(optarg, stream_arr);
-            break;
-        case 'p':
-            printf("Path: %s\n", optarg);
-            filepath = optarg;
-            break;
-        case 'c':
-            printf("File will be created\n");
-            create = true;
-            break;
-        case 'w':
-            printf("Columns will be : %s\n", optarg);
-            parsestreaminfo(optarg, column_arr);
-            firstColumn = column_arr[0];
-            thirdColumn = column_arr[1];
-            fourthColumn = column_arr[2];
-            break;
-        case 'v':
-            view = true;
-            break;
-        case 'h':
-            printusage();
-            break;
-        case '?':
-            printusage();
-            break;
-        default:
-            printf("Unknown option: %c\n", optopt);
-            printusage();
-            break;
+            switch (opt)
+            {
+            case 'i':
+                printf("Input File name: %s\n", optarg);
+                ipfilename = optarg;
+                break;
+            case 's':
+                printf("Stream number %s will be added\n", optarg);
+                stream_count = parsecomma(optarg, stream_no);
+                break;
+            case 'p':
+                printf("Path: %s\n", optarg);
+                filepath = optarg;
+                break;
+            case 'w':
+                printf("Columns will be : %s\n", optarg);
+                parsecomma(optarg, column_no);
+                thirdColumn = column_no[0];
+                fourthColumn = column_no[1];
+                break;
+            case 'h':
+                printusage();
+                break;
+            default:
+                printf("Unknown option: %c\n", optopt);
+                printusage();
+                break;
+            }
         }
     }
     // DRIVER CODE
-    if (view)
+    if (argc > 1)
     {
-        fileParser();
-        printinfo();
-    }
-    if (create)
-    {
-        if (!view)
-            fileParser();
+        fileParser(ipfilename);
 
         createFile(opfilename);
-        for (int i = 0; i < stream_count; i++)
-            addStream(stream_arr[i]);
+        totalentries = addStream(stream_no, stream_count);
 
         std::cout << endl
-                  << opfilename << " : " << pricemon << " Total entires added " << endl;
+                  << opfilename << " : " << totalentries << " Total entires added " << endl;
 
         // Total TIME
         printTime(&start);
