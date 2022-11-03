@@ -9,9 +9,10 @@
 using namespace std;
 using namespace std::chrono;
 
-#define FOFILE "StreamTokenMapFO.config"
-#define OTUPUTFILENAME "PriceMonitor.config"
-#define FILEPATH "C:/Users/Administrator/Desktop/sc" // Keep blank for Current Directory
+#define FOFILE              "StreamTokenMapFO.config"
+#define OTUPUTFILENAME      "PriceMonitor.config"
+#define FILEPATH            "C:/Users/Administrator/Desktop/sc" // Keep blank for Current Directory
+#define DEFAULTDERIVEDPATH  "config/InputAdapter/StreamTokenMaps/"
 
 #define THIRDCOLUMN 0
 #define FOURTHCOLUMN 100
@@ -34,19 +35,19 @@ map<int, string> token2Symbol;
 set<int> stream_set;
 
 int stream_no[20];
-int column_no[2];
+int cval_div[2];
 int priceMonitorEntries = 0;
 
-void printusage()
+void Print_Usage()
 {
-    cout << "i: InputFileName\n";
+    cout << "i: InputFileName [Default: StreamTokenMapFO.config]\n";
     cout << "s: Stream(s) Comma Seperated\n";
-    cout << "p: Path of Input and Output file\n";
-    cout << "w: Custom PriceMonitor Params\n";
+    cout << "p: Path of ConfigFile\n";
+    cout << "w: Custom PriceMonitor Params (CVAL, DIVISOR)[Default: 0,100]\n";
 }
 
 // return total number of streams parsed
-int parsecomma(string str, int *p)
+int Parse_Comma_Separated_String(string str, int *p)
 {
     int count = 0;
     char *ch = (char *)str.c_str();
@@ -62,9 +63,8 @@ int parsecomma(string str, int *p)
     return count;
 }
 
-int writefile(int stream)
+int Write_File(int stream)
 {
-
     ofstream fp;
     string outputfilename = filepath;
     outputfilename.append(opfilename);
@@ -92,7 +92,7 @@ int writefile(int stream)
     return count;
 }
 
-void createFile(string filename)
+void Create_File(string filename)
 {
 
     ofstream fp;
@@ -119,23 +119,33 @@ void createFile(string filename)
               << endl;
 }
 
-void fileParser(string ipfile)
+void File_Parser(string ipfile)
 {
 
     int token, stream;
     string symbol;
     string inputFileName;
 
-    if (filepath != "")
-    {
-        inputFileName = filepath;
-        if (inputFileName[inputFileName.length() - 1] != '/')
-            inputFileName.append("/");
-    }
-    // one time update of the file path
-    filepath = inputFileName;
+    
+    
+    
 
-    inputFileName.append(ipfilename);
+        if (filepath != "")
+        {
+            inputFileName = filepath;
+            if (inputFileName[inputFileName.length() - 1] != '/')
+                inputFileName.append("/");
+        }
+        // one time update of the file path
+        filepath = inputFileName;
+
+        //if not def get derived path
+        #ifndef enablepath
+        inputFileName.append(DEFAULTDERIVEDPATH);
+        #endif
+        inputFileName.append(ipfilename);
+
+   
 
     ifstream fip;
     fip.open(inputFileName);
@@ -173,7 +183,7 @@ void fileParser(string ipfile)
     fip.close();
 }
 
-int addStream(int *stream, int count)
+int Add_Stream(int *stream, int count)
 {
     int entries = 0;
     while (count-- > 0)
@@ -181,7 +191,7 @@ int addStream(int *stream, int count)
         auto pos = stream_set.find(*stream);
         if (pos != stream_set.end())
         {
-            entries += writefile(*stream++);
+            entries += Write_File(*stream++);
         }
         else
             std::cout << "Invalid Stream or Stream not found!" << endl;
@@ -190,7 +200,7 @@ int addStream(int *stream, int count)
     return entries;
 }
 
-void printTime(std::chrono::_V2::system_clock::time_point *stime)
+void Print_time(std::chrono::_V2::system_clock::time_point *stime)
 {
     std::chrono::_V2::system_clock::time_point start = *stime;
     std::chrono::_V2::system_clock::time_point stop = high_resolution_clock::now();
@@ -209,10 +219,9 @@ int main(int argc, char *argv[])
 
     // new changes //options parser
 
-    int opt,
-        stream_count = 0;
+    int opt,stream_count = 0;
     if (argc == 1)
-        printusage();
+        Print_Usage();
     else
     {
         while ((opt = getopt(argc, argv, "i:s:p:w:h")) != -1)
@@ -224,25 +233,26 @@ int main(int argc, char *argv[])
                 ipfilename = optarg;
                 break;
             case 's':
-                printf("Stream number %s will be added\n", optarg);
-                stream_count = parsecomma(optarg, stream_no);
+                printf("Stream(s) %s will be added\n", optarg);
+                stream_count = Parse_Comma_Separated_String(optarg, stream_no);
                 break;
             case 'p':
                 printf("Path: %s\n", optarg);
                 filepath = optarg;
+                #define enablepath
                 break;
             case 'w':
-                printf("Columns will be : %s\n", optarg);
-                parsecomma(optarg, column_no);
-                thirdColumn = column_no[0];
-                fourthColumn = column_no[1];
+                printf("CVAL, DIVISOR will be : %s\n", optarg);
+                Parse_Comma_Separated_String(optarg, cval_div);
+                thirdColumn = cval_div[0];
+                fourthColumn = cval_div[1];
                 break;
             case 'h':
-                printusage();
+                Print_Usage();
                 break;
             default:
                 printf("Unknown option: %c\n", optopt);
-                printusage();
+                Print_Usage();
                 break;
             }
         }
@@ -250,16 +260,16 @@ int main(int argc, char *argv[])
     // DRIVER CODE
     if (argc > 1)
     {
-        fileParser(ipfilename);
+        File_Parser(ipfilename);
 
-        createFile(opfilename);
-        totalentries = addStream(stream_no, stream_count);
+        (opfilename);
+        totalentries = Add_Stream(stream_no, stream_count);
 
         std::cout << endl
                   << opfilename << " : " << totalentries << " Total entires added " << endl;
 
         // Total TIME
-        printTime(&start);
+        Print_time(&start);
     }
     // end changes
 
