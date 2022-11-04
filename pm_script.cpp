@@ -200,9 +200,9 @@ int Add_Stream(int *stream, int count)
     return entries;
 }
 
-void Print_time(std::chrono::_V2::system_clock::time_point *stime)
+void Print_time(std::chrono::_V2::system_clock::time_point *start_time)
 {
-    std::chrono::_V2::system_clock::time_point start = *stime;
+    std::chrono::_V2::system_clock::time_point start = *start_time;
     std::chrono::_V2::system_clock::time_point stop = high_resolution_clock::now();
     // auto duration = duration_cast<microseconds>(stop - start);
     duration<double> time_span = duration_cast<duration<double>>(stop - start);
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
             case 'p':
                 printf("Path: %s\n", optarg);
                 filepath = optarg;
-                #define enablepath
+                #define enablepath 1
                 break;
             case 'w':
                 printf("CVAL, DIVISOR will be : %s\n", optarg);
