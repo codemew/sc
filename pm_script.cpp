@@ -11,18 +11,11 @@ using namespace std::chrono;
 
 #define FOFILE              "StreamTokenMapFO.config"
 #define OTUPUTFILENAME      "PriceMonitor.config"
-#define FILEPATH            "C:/Users/Administrator/Desktop/sc" // Keep blank for Current Directory
+#define FILEPATH            "" 
 #define DEFAULTDERIVEDPATH  "config/InputAdapter/StreamTokenMaps/"
-
-#define THIRDCOLUMN 0
-#define FOURTHCOLUMN 100
 
 #define FIRSTLINE "1"
 #define SECONDLINE "0,PriceMonitor_Fut.log,"
-
-// Default columns
-int thirdColumn = THIRDCOLUMN;
-int fourthColumn = FOURTHCOLUMN;
 
 // FILE PATH
 string ipfilename = FOFILE;
@@ -34,16 +27,17 @@ map<int, int> token2Stream;
 map<int, string> token2Symbol;
 set<int> stream_set;
 
-int stream_no[20];
-int cval_div[2];
+int stream_nos[20];
+//default cval, divisor value
+int cval_div[]={0,100};
 int priceMonitorEntries = 0;
 
 void Print_Usage()
 {
-    cout << "i: InputFileName [Default: StreamTokenMapFO.config]\n";
-    cout << "s: Stream(s) Comma Seperated\n";
-    cout << "p: Path of ConfigFile\n";
-    cout << "w: Custom PriceMonitor Params (CVAL, DIVISOR)[Default: 0,100]\n";
+    cout << "i: Input File Name                     [REQ - N]|[Default: StreamTokenMapFO.config]\n";
+    cout << "s: Stream(s) Comma Seperated           [REQ - Y]\n";
+    cout << "p: Path of ConfigFile                  [REQ - N]|[Default: $(PWD)/"<<DEFAULTDERIVEDPATH<<"]\n";
+    cout << "w: CVAL,DIVISOR for PriceMonitor       [REQ - N]|[Default: 0,100]\n";
 }
 
 // return total number of streams parsed
@@ -66,7 +60,7 @@ int Parse_Comma_Separated_String(string str, int *p)
 int Write_File(int stream)
 {
     ofstream fp;
-    string outputfilename = filepath;
+    string outputfilename = "";
     outputfilename.append(opfilename);
 
     fp.open(outputfilename, ios::out | ios::app);
@@ -80,7 +74,7 @@ int Write_File(int stream)
     {
         if (it->second == stream)
         {
-            fp << 1 << ',' << token2Symbol[it->first] << ',' << thirdColumn << ',' << fourthColumn << ',' << endl;
+            fp << 1 << ',' << token2Symbol[it->first] << ',' << cval_div[0] << ',' << cval_div[1] << ',' << endl;
             count++;
         }
     }
@@ -96,7 +90,7 @@ void Create_File(string filename)
 {
 
     ofstream fp;
-    string outputfilename = filepath;
+    string outputfilename = "";
     outputfilename.append(filename);
 
     fp.open(outputfilename, ios::out | ios::trunc);
@@ -126,26 +120,19 @@ void File_Parser(string ipfile)
     string symbol;
     string inputFileName;
 
-    
-    
-    
 
-        if (filepath != "")
-        {
+
+        if(filepath=="")
+            filepath=DEFAULTDERIVEDPATH;
+        
+            //adding '/' at the end
             inputFileName = filepath;
-            if (inputFileName[inputFileName.length() - 1] != '/')
-                inputFileName.append("/");
-        }
-        // one time update of the file path
-        filepath = inputFileName;
-
-        //if not def get derived path
-        #ifndef enablepath
-        inputFileName.append(DEFAULTDERIVEDPATH);
-        #endif
+                if (inputFileName[inputFileName.length() - 1] != '/')
+                    inputFileName.append("/");
+            filepath = inputFileName;
+    
         inputFileName.append(ipfilename);
 
-   
 
     ifstream fip;
     fip.open(inputFileName);
@@ -215,11 +202,9 @@ int main(int argc, char *argv[])
     // timer
     std::chrono::_V2::system_clock::time_point start = high_resolution_clock::now();
 
-    int totalentries = 0;
-
-    // new changes //options parser
-
+    int totalentries = 0;  
     int opt,stream_count = 0;
+     // new changes --getopt()
     if (argc == 1)
         Print_Usage();
     else
@@ -234,18 +219,15 @@ int main(int argc, char *argv[])
                 break;
             case 's':
                 printf("Stream(s) %s will be added\n", optarg);
-                stream_count = Parse_Comma_Separated_String(optarg, stream_no);
+                stream_count = Parse_Comma_Separated_String(optarg, stream_nos);
                 break;
             case 'p':
                 printf("Path: %s\n", optarg);
                 filepath = optarg;
-                #define enablepath 1
                 break;
             case 'w':
                 printf("CVAL, DIVISOR will be : %s\n", optarg);
                 Parse_Comma_Separated_String(optarg, cval_div);
-                thirdColumn = cval_div[0];
-                fourthColumn = cval_div[1];
                 break;
             case 'h':
                 Print_Usage();
@@ -258,22 +240,23 @@ int main(int argc, char *argv[])
         }
     }
     // DRIVER CODE
-    if (argc > 1)
+    if (stream_count==0)
     {
+        std::cout<<"[-s] missing (Stream is required field)\n";
+        Print_Usage();
+    }
+    else
+    {   
         File_Parser(ipfilename);
-
-        (opfilename);
-        totalentries = Add_Stream(stream_no, stream_count);
-
+        Create_File(opfilename);
+        totalentries = Add_Stream(stream_nos, stream_count);
         std::cout << endl
                   << opfilename << " : " << totalentries << " Total entires added " << endl;
-
         // Total TIME
         Print_time(&start);
     }
     // end changes
 
-    // std::cout << pricemon << " Entries added to PriceMonitor.config" << endl;
 
     return 0;
 }
